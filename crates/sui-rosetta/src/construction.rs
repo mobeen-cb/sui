@@ -172,8 +172,10 @@ pub async fn preprocess(
     let internal_operation = request.operations.into_internal()?;
     let sender = internal_operation.sender();
 
+    let budget = request.metadata.ok_or(Error::MissingMetadata)?.budget;
+
     Ok(ConstructionPreprocessResponse {
-        options: Some(MetadataOptions { internal_operation }),
+        options: Some(MetadataOptions { internal_operation, budget }),
         required_public_keys: vec![sender.into()],
     })
 }
@@ -290,9 +292,13 @@ pub async fn metadata(
     if let SuiExecutionStatus::Failure { error } = effects.status() {
         return Err(Error::TransactionDryRunError(error.to_string()));
     }
-
-    let budget =
-        effects.gas_cost_summary().computation_cost + effects.gas_cost_summary().storage_cost;
+    // get budget from options.budget if (not null)
+    let budget = if let Some(budget) = option.budget {
+        budget
+    } else {
+        // get budget from dry-run
+        effects.gas_cost_summary().computation_cost + effects.gas_cost_summary().storage_cost
+    };
 
     // Try select coins for required amounts
     let coins = if let Some(amount) = total_required_amount {

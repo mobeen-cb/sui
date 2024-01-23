@@ -573,6 +573,7 @@ pub struct ConstructionPreprocessResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MetadataOptions {
     pub internal_operation: InternalOperation,
+    pub budget: u64,
 }
 
 impl IntoResponse for ConstructionPreprocessResponse {
